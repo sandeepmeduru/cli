@@ -1450,8 +1450,8 @@ class Node {
 
   // maybe accept both string value or array of strings
   // seems to be what dom API does
-  querySelectorAll (query) {
-    return querySelectorAll(this, query)
+  querySelectorAll (query, opts) {
+    return querySelectorAll(this, query, opts)
   }
 
   toJSON () {

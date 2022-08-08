@@ -5,6 +5,8 @@ const { parser, arrayDelimiter } = require('@npmcli/query')
 const localeCompare = require('@isaacs/string-locale-compare')('en')
 const npa = require('npm-package-arg')
 const minimatch = require('minimatch')
+const pacote = require('pacote')
+const pickManifest = require('npm-pick-manifest')
 const semver = require('semver')
 
 // handle results for parsed query asts, results are stored in a map that has a
@@ -26,6 +28,9 @@ class Results {
     this.#targetNode = opts.targetNode
 
     this.currentResults = this.#initialItems
+
+    // We get this when first called and need to pass it to pacote
+    this.flatOptions = opts.flatOptions
 
     // reset by rootAstNode walker
     this.currentAstNode = opts.rootAstNode
@@ -57,6 +62,7 @@ class Results {
     if (firstParsed) {
       return this.#initialItems
     }
+    console.log(this.currentAstNode)
     if (this.currentAstNode.prev().type === 'combinator') {
       return this.#inventory
     }
@@ -124,7 +130,7 @@ class Results {
   }
 
   // pseudo selectors (prefixed with :)
-  pseudoType () {
+  async pseudoType () {
     const pseudoFn = `${this.currentAstNode.value.slice(1)}Pseudo`
     if (!this[pseudoFn]) {
       throw Object.assign(
@@ -133,7 +139,7 @@ class Results {
         { code: 'EQUERYNOPSEUDO' }
       )
     }
-    const nextResults = this[pseudoFn]()
+    const nextResults = await this[pseudoFn]()
     this.processPendingCombinator(nextResults)
   }
 
@@ -194,11 +200,12 @@ class Results {
     return this.initialItems.filter(node => node.extraneous)
   }
 
-  hasPseudo () {
+  async hasPseudo () {
     const found = []
     for (const item of this.initialItems) {
-      const res = retrieveNodesFromParsedAst({
-        // This is the one time initialItems differs from inventory
+      // This is the one time initialItems differs from inventory
+      const res = await retrieveNodesFromParsedAst({
+        flatOptions: this.flatOptions,
         initialItems: [item],
         inventory: this.#inventory,
         rootAstNode: this.currentAstNode.nestedNode,
@@ -224,8 +231,9 @@ class Results {
     return found
   }
 
-  isPseudo () {
-    const res = retrieveNodesFromParsedAst({
+  async isPseudo () {
+    const res = await retrieveNodesFromParsedAst({
+      flatOptions: this.flatOptions,
       initialItems: this.initialItems,
       inventory: this.#inventory,
       rootAstNode: this.currentAstNode.nestedNode,
@@ -250,8 +258,9 @@ class Results {
     }, [])
   }
 
-  notPseudo () {
-    const res = retrieveNodesFromParsedAst({
+  async notPseudo () {
+    const res = await retrieveNodesFromParsedAst({
+      flatOptions: this.flatOptions,
       initialItems: this.initialItems,
       inventory: this.#inventory,
       rootAstNode: this.currentAstNode.nestedNode,
@@ -312,6 +321,41 @@ class Results {
 
   dedupedPseudo () {
     return this.initialItems.filter(node => node.target.edgesIn.size > 1)
+  }
+
+  async outdatedPseudo () {
+    const outdatedSpec = this.currentAstNode.outdatedValue
+    const found = []
+    for (const node of this.initialItems) {
+      if (node.isProjectRoot) { continue }
+      let packument
+      if (!outdatedSpec) {
+        for (const edge of node.edgesIn) {
+          if (npa(`${edge.name}@${edge.spec}`).registry) {
+            packument = packument || await pacote.packument(node.name, {
+              ...this.flatOptions,
+              // preferOnline: true
+            })
+            const manifest = pickManifest(packument, edge.spec, this.flatOptions)
+            if (manifest.version !== node.version) {
+              found.push(node)
+              continue
+            }
+          }
+        }
+      } else {
+        console.log(node)
+        packument = await pacote.packument(node.name, {
+          ...this.flatOptions,
+          // preferOnline: true
+        })
+        const manifest = pickManifest(packument, outdatedSpec, this.flatOptions)
+        if (manifest.version !== node.version) {
+          found.push(node)
+        }
+      }
+    }
+    return found
   }
 }
 
@@ -512,7 +556,7 @@ const combinators = {
   },
 }
 
-const retrieveNodesFromParsedAst = (opts) => {
+const retrieveNodesFromParsedAst = async (opts) => {
   // when we first call this it's the parsed query.  all other times it's
   // results.currentNode.nestedNode
   const rootAstNode = opts.rootAstNode
@@ -523,7 +567,11 @@ const retrieveNodesFromParsedAst = (opts) => {
 
   const results = new Results(opts)
 
-  rootAstNode.walk((nextAstNode) => {
+  const astNodeQueue = new Set()
+  // walk is sync, so we have to build up our async functions and then await them later
+  rootAstNode.walk((nextAstNode) => { astNodeQueue.add(nextAstNode) })
+
+  for (const nextAstNode of astNodeQueue) {
     // This is the only place we reset currentAstNode
     results.currentAstNode = nextAstNode
     const updateFn = `${results.currentAstNode.type}Type`
@@ -533,23 +581,24 @@ const retrieveNodesFromParsedAst = (opts) => {
         { code: 'EQUERYNOSELECTOR' }
       )
     }
-    results[updateFn]()
-  })
+    await results[updateFn]()
+  }
 
   return results.collect(rootAstNode)
 }
 
 // We are keeping this async in the event that we do add async operators, we
 // won't have to have a breaking change on this function signature.
-const querySelectorAll = async (targetNode, query) => {
+const querySelectorAll = async (targetNode, query, flatOptions) => {
   // This never changes ever we just pass it around. But we can't scope it to
   // this whole file if we ever want to support concurrent calls to this
   // function.
   const inventory = [...targetNode.root.inventory.values()]
   // res is a Set of items returned for each parsed css ast selector
-  const res = retrieveNodesFromParsedAst({
+  const res = await retrieveNodesFromParsedAst({
     initialItems: inventory,
     inventory,
+    flatOptions,
     rootAstNode: parser(query),
     targetNode,
   })
