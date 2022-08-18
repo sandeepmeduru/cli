@@ -30,7 +30,7 @@ jobs:
           git config --global user.name "npm CLI robot"
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 16.x
       - name: Update npm to latest
         run: npm i --prefer-online --no-fund --no-audit -g npm@latest
       - run: npm -v
@@ -42,7 +42,12 @@ jobs:
       fail-fast: false
       matrix:
         node-version:
-          - 16
+          - 12.13.0
+          - 12.x
+          - 14.15.0
+          - 14.x
+          - 16.0.0
+          - 16.x
         platform:
           - os: ubuntu-latest
             shell: bash

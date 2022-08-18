@@ -31,8 +31,8 @@ jobs:
         with:
           node-version: 16.x
           cache: npm
-      - run: make freshdocs
-      - run: node scripts/git-dirty.js
+      - run: node bin/npm-cli.js run resetdeps
+      - run: node bin/npm-cli.js run docs
 
   licenses:
     runs-on: ubuntu-latest

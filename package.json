@@ -216,7 +216,7 @@
     "test": "tap",
     "test-all": "npm run test --if-present --workspaces --include-workspace-root",
     "snap": "tap",
-    "postsnap": "make -s docs",
+    "docs": "npm run build -w docs",
     "test:nocleanup": "NO_TEST_CLEANUP=1 npm run test --",
     "sudotest": "sudo npm run test --",
     "sudotest:nocleanup": "sudo NO_TEST_CLEANUP=1 npm run test --",
@@ -225,7 +225,8 @@
     "lintfix": "npm run lint -- --fix",
     "lint-all": "npm run lint --if-present --workspaces --include-workspace-root",
     "prelint": "rimraf test/npm_cache*",
-    "resetdeps": "bash scripts/resetdeps.sh"
+    "resetdeps": "bash scripts/resetdeps.sh",
+    "prepack": "npm run docs"
   },
   "tap": {
     "test-env": [
