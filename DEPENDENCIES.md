@@ -279,6 +279,7 @@ graph LR;
   docs-->marked-man;
   docs-->mdx-js-mdx["@mdx-js/mdx"];
   docs-->npmcli-eslint-config["@npmcli/eslint-config"];
+  docs-->npmcli-fs["@npmcli/fs"];
   docs-->npmcli-promise-spawn["@npmcli/promise-spawn"];
   docs-->npmcli-template-oss["@npmcli/template-oss"];
   docs-->tap;
