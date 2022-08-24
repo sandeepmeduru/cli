@@ -456,42 +456,63 @@ class Node {
   }
 
   getBundler (path = []) {
+    console.error(this.name)
+
     // made a cycle, definitely not bundled!
     if (path.includes(this)) {
+      console.error(this.name, 'cycle')
       return null
     }
 
     path.push(this)
 
+    for (const link of this.linksIn) {
+      console.error(this.name, 'checking link')
+      const lBundler = link.getBundler(path)
+
+      if (lBundler) {
+        console.error(this.name, 'links in', lBundler.name)
+        return lBundler
+      }
+    }
+
     const parent = this[_parent]
     if (!parent) {
+      console.error(this.name, 'no parent')
       return null
     }
 
-    const pBundler = parent.getBundler(path)
-    if (pBundler) {
-      return pBundler
-    }
-
-    const ppkg = parent.package
-    const bd = ppkg && ppkg.bundleDependencies
-    // explicit bundling
-    if (Array.isArray(bd) && bd.includes(this.name)) {
-      return parent
-    }
-
-    // deps that are deduped up to the bundling level are bundled.
-    // however, if they get their dep met further up than that,
-    // then they are not bundled.  Ie, installing a package with
-    // unmet bundled deps will not cause your deps to be bundled.
-    for (const edge of this.edgesIn) {
-      const eBundler = edge.from.getBundler(path)
-      if (!eBundler) {
-        continue
+    if (parent) {
+      console.error(this.name, 'checking parent', parent.name)
+      const pBundler = parent.getBundler(path)
+      if (pBundler) {
+        console.error(this.name, 'parent', pBundler.name)
+        return pBundler
       }
 
-      if (eBundler === parent) {
-        return eBundler
+      const ppkg = parent.package
+      const bd = ppkg && ppkg.bundleDependencies
+      // explicit bundling
+      if (Array.isArray(bd) && bd.includes(this.name)) {
+        console.error(this.name, 'explicit')
+        return parent
+      }
+
+      // deps that are deduped up to the bundling level are bundled.
+      // however, if they get their dep met further up than that,
+      // then they are not bundled.  Ie, installing a package with
+      // unmet bundled deps will not cause your deps to be bundled.
+      for (const edge of this.edgesIn) {
+        console.error(this.name, 'checking edge', edge.name)
+        const eBundler = edge.from.getBundler(path)
+        if (!eBundler) {
+          continue
+        }
+
+        if (eBundler === parent) {
+          console.error(this.name, 'edge', eBundler.name)
+          return eBundler
+        }
       }
     }
 

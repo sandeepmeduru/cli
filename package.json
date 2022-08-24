@@ -135,7 +135,6 @@
     "@npmcli/fs",
     "@npmcli/map-workspaces",
     "@npmcli/package-json",
-    "@npmcli/promise-spawn",
     "@npmcli/run-script",
     "abbrev",
     "archy",
@@ -146,7 +145,6 @@
     "cli-table3",
     "columnify",
     "fastest-levenshtein",
-    "fs-minipass",
     "glob",
     "graceful-fs",
     "hosted-git-info",
@@ -166,7 +164,6 @@
     "libnpmteam",
     "libnpmversion",
     "make-fetch-happen",
-    "minimatch",
     "minipass",
     "minipass-pipeline",
     "mkdirp",
@@ -205,6 +202,7 @@
   ],
   "devDependencies": {
     "@npmcli/eslint-config": "^3.1.0",
+    "@npmcli/git": "^3.0.2",
     "@npmcli/promise-spawn": "^3.0.0",
     "@npmcli/template-oss": "3.5.0",
     "fs-minipass": "^2.1.0",
@@ -215,7 +213,7 @@
     "tap": "^16.0.1"
   },
   "scripts": {
-    "dependencies": "node scripts/bundle-and-gitignore-deps.js && node scripts/dependency-graph.js",
+    "dependencies": "./scripts/bundle-deps.js && ./scripts/node-modules-ignores.js && ./scripts/dependency-graph.js",
     "dumpconf": "env | grep npm | sort | uniq",
     "preversion": "bash scripts/update-authors.sh && git add AUTHORS && git commit -m \"chore: update AUTHORS\" || true",
     "licenses": "licensee --production --errors-only",

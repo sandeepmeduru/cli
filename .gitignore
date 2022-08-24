@@ -6,8 +6,6 @@
 !/docs/
 !/lib/
 !/node_modules/
-/node_modules/.bin/
-/node_modules/.cache/
 !/scripts/
 !/smoke-tests/
 !/tap-snapshots/

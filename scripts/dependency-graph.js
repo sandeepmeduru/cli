@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 'use strict'
 
 // Generates our dependency graph documents in DEPENDENCIES.md.
