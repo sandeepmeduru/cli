@@ -48,9 +48,5 @@ jobs:
         run: |
           gh pr checkout ${{ matrix.pr.number }}
           npm run resetdeps
-          title="${{ matrix.pr.title }}"
-          # get the dependency spec from the pr title
-          # get everything after ': release ' + replace space with @
-          dep_spec=$(echo "${title##*: release }" | tr ' ' @)
-          git commit -am "deps: $dep_spec"
+          git commit -am "deps: workspace deps"
           git push
