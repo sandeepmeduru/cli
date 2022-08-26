@@ -28,7 +28,7 @@
     }
   ],
   "packages": {
-    ".": { "package-name": "" },
+    ".": { "package-name": "", "changelog-type": "npm-cli" },
     "workspaces/arborist": {},
     "workspaces/libnpmaccess": {},
     "workspaces/libnpmdiff": {},
